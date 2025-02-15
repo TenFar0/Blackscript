@@ -1,0 +1,82 @@
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 170)
+Frame.Position = UDim2.new(0.5, -100, 0.5, -85)
+Frame.Draggable = true
+Frame.Active = true
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 200, 0, 20)
+Title.Position = UDim2.new(0, 0, 0, -20)
+Title.Text = "by TenFar"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundTransparency = 1
+Title.Parent = Frame
+
+local ToggleLabel = Instance.new("TextLabel")
+ToggleLabel.Size = UDim2.new(0, 200, 0, 20)
+ToggleLabel.Position = UDim2.new(0, 0, 1, 5)
+ToggleLabel.Text = "Q для скрытия"
+ToggleLabel.TextColor3 = Color3.new(1, 1, 1)
+ToggleLabel.BackgroundTransparency = 1
+ToggleLabel.Parent = Frame
+
+local TextBox = Instance.new("TextBox")
+TextBox.Size = UDim2.new(0, 180, 0, 30)
+TextBox.Position = UDim2.new(0, 10, 0, 10)
+TextBox.PlaceholderText = "nickname"
+TextBox.Parent = Frame
+
+local ApplyButton = Instance.new("TextButton")
+ApplyButton.Size = UDim2.new(0, 180, 0, 30)
+ApplyButton.Position = UDim2.new(0, 10, 0, 50)
+ApplyButton.Text = "Сделать черным"
+ApplyButton.Parent = Frame
+
+local function ChangeSkinToBlack(player)
+    local function ApplyChange()
+        if player.Character then
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.Color = Color3.new(0, 0, 0) -- Черный цвет
+                end
+            end
+        end
+    end
+    
+    ApplyChange()
+    player.CharacterAdded:Connect(ApplyChange)
+end
+
+ApplyButton.MouseButton1Click:Connect(function()
+    local playerName = TextBox.Text
+    local player = Players:FindFirstChild(playerName)
+    if player then
+        ChangeSkinToBlack(player)
+    end
+end)
+
+local ResetButton = Instance.new("TextButton")
+ResetButton.Size = UDim2.new(0, 180, 0, 30)
+ResetButton.Position = UDim2.new(0, 10, 0, 90)
+ResetButton.Text = "Сбросить изменения"
+ResetButton.Parent = Frame
+
+ResetButton.MouseButton1Click:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        player:LoadCharacter() -- Перезагружает персонажа
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Q then
+        Frame.Visible = not Frame.Visible
+    end
+end)
