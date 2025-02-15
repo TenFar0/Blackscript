@@ -5,78 +5,122 @@ local UserInputService = game:GetService("UserInputService")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 170)
-Frame.Position = UDim2.new(0.5, -100, 0.5, -85)
-Frame.Draggable = true
-Frame.Active = true
-Frame.Parent = ScreenGui
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 250, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -200)
+MainFrame.Draggable = true
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 200, 0, 20)
-Title.Position = UDim2.new(0, 0, 0, -20)
+Title.Size = UDim2.new(0, 250, 0, 30)
+Title.Position = UDim2.new(0, 0, 0, -30)
 Title.Text = "by TenFar"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.BackgroundTransparency = 1
-Title.Parent = Frame
+Title.TextSize = 20  
+Title.Parent = MainFrame
 
-local ToggleLabel = Instance.new("TextLabel")
-ToggleLabel.Size = UDim2.new(0, 200, 0, 20)
-ToggleLabel.Position = UDim2.new(0, 0, 1, 5)
+local ToggleLabel = Instance.new("TextButton")
+ToggleLabel.Size = UDim2.new(0, 250, 0, 40)
+ToggleLabel.Position = UDim2.new(0, 0, 1, -50)
 ToggleLabel.Text = "Q для скрытия"
 ToggleLabel.TextColor3 = Color3.new(1, 1, 1)
-ToggleLabel.BackgroundTransparency = 1
-ToggleLabel.Parent = Frame
+ToggleLabel.BackgroundTransparency = 0.5
+ToggleLabel.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+ToggleLabel.TextSize = 18  
+ToggleLabel.Parent = MainFrame
 
-local TextBox = Instance.new("TextBox")
-TextBox.Size = UDim2.new(0, 180, 0, 30)
-TextBox.Position = UDim2.new(0, 10, 0, 10)
-TextBox.PlaceholderText = "nickname"
-TextBox.Parent = Frame
+local SearchBox = Instance.new("TextBox")
+SearchBox.Size = UDim2.new(0, 250, 0, 30)
+SearchBox.Position = UDim2.new(0, 0, 0, 30)
+SearchBox.PlaceholderText = "Поиск (дисплей или ник)" 
+SearchBox.TextColor3 = Color3.new(1, 1, 1)
+SearchBox.BackgroundTransparency = 0.5
+SearchBox.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+SearchBox.Parent = MainFrame
+
+local PlayerListFrame = Instance.new("ScrollingFrame")
+PlayerListFrame.Size = UDim2.new(0, 250, 0, 250)
+PlayerListFrame.Position = UDim2.new(0, 0, 0, 70)
+PlayerListFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
+PlayerListFrame.ScrollBarThickness = 5
+PlayerListFrame.Parent = MainFrame
 
 local ApplyButton = Instance.new("TextButton")
-ApplyButton.Size = UDim2.new(0, 180, 0, 30)
-ApplyButton.Position = UDim2.new(0, 10, 0, 50)
+ApplyButton.Size = UDim2.new(0, 250, 0, 30)
+ApplyButton.Position = UDim2.new(0, 0, 0, 320)
 ApplyButton.Text = "Сделать черным"
-ApplyButton.Parent = Frame
+ApplyButton.Parent = MainFrame
+
+local SelectedPlayer = nil
+local ChangedPlayers = {}
+local OriginalColors = {}
 
 local function ChangeSkinToBlack(player)
     local function ApplyChange()
         if player.Character then
+            OriginalColors[player] = {}
             for _, part in pairs(player.Character:GetChildren()) do
                 if part:IsA("BasePart") then
-                    part.Color = Color3.new(0, 0, 0) -- Черный цвет
+                    OriginalColors[player][part] = part.Color
+                    part.Color = Color3.new(0, 0, 0)
                 end
             end
         end
     end
     
     ApplyChange()
-    player.CharacterAdded:Connect(ApplyChange)
+    if not ChangedPlayers[player] then
+        ChangedPlayers[player] = game:GetService("RunService").Stepped:Connect(function()
+            ApplyChange()
+        end)
+    end
 end
 
 ApplyButton.MouseButton1Click:Connect(function()
-    local playerName = TextBox.Text
-    local player = Players:FindFirstChild(playerName)
-    if player then
-        ChangeSkinToBlack(player)
+    if SelectedPlayer then
+        ChangeSkinToBlack(SelectedPlayer)
     end
 end)
 
-local ResetButton = Instance.new("TextButton")
-ResetButton.Size = UDim2.new(0, 180, 0, 30)
-ResetButton.Position = UDim2.new(0, 10, 0, 90)
-ResetButton.Text = "Сбросить изменения"
-ResetButton.Parent = Frame
-
-ResetButton.MouseButton1Click:Connect(function()
+local function UpdatePlayerList(searchTerm)
+  -- бебебе
+    for _, child in pairs(PlayerListFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    local yOffset = 0
     for _, player in pairs(Players:GetPlayers()) do
-        player:LoadCharacter() -- Перезагружает персонажа
+      -- чевапчичи я заебался
+        if (player.DisplayName:lower():find(searchTerm:lower()) or player.Name:lower():find(searchTerm:lower())) then
+            local PlayerButton = Instance.new("TextButton")
+            PlayerButton.Size = UDim2.new(0, 250, 0, 30)
+            PlayerButton.Position = UDim2.new(0, 0, 0, yOffset)
+            PlayerButton.Text = player.DisplayName .. " (" .. player.Name .. ")"
+            PlayerButton.Parent = PlayerListFrame
+            
+            PlayerButton.MouseButton1Click:Connect(function()
+                SelectedPlayer = player
+            end)
+            
+            yOffset = yOffset + 35
+        end
     end
+end
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    UpdatePlayerList(SearchBox.Text)
 end)
+
+Players.PlayerAdded:Connect(UpdatePlayerList)
+Players.PlayerRemoving:Connect(UpdatePlayerList)
+UpdatePlayerList("")  
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Q then
-        Frame.Visible = not Frame.Visible
+        MainFrame.Visible = not MainFrame.Visible
     end
 end)
